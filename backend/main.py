@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from routes.quiz import quiz_router
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
