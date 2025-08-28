@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { Link } from 'react-router-dom'
 
 export default function Dashboard({ user }) {
 	const [files, setFiles] = useState([])
@@ -74,7 +75,7 @@ export default function Dashboard({ user }) {
 													</span>
 												</div>
 											</div>
-											<a href={file.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline block mt-2">Open/Download</a>
+											<Link to={`/document/${encodeURIComponent(file.filename)}`} className="text-blue-600 underline block mt-2">Open</Link>
 										</div>
 										<h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
 											{file.filename}

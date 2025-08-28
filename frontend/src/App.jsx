@@ -3,6 +3,7 @@ import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Upload from './pages/Upload'
 import Quiz from './pages/Quiz'
+import DocumentView from './pages/DocumentView'
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth'
 import './firebase'
 
@@ -125,6 +126,7 @@ export default function App() {
 					<Route path="/upload" element={<Upload user={user} />} />
 					<Route path="/quiz" element={<Quiz user={user} />} />
 					<Route path="/login" element={<LoginPage onLogin={login} />} />
+					<Route path="/document/:filename" element={<DocumentView />} />
 				</Routes>
 			</main>
 		</div>
