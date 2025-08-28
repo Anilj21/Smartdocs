@@ -1,0 +1,24 @@
+# Python Virtual Environment
+.venv/
+venv/
+
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Build files
+dist/
+build/
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
