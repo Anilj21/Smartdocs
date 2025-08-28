@@ -21,7 +21,20 @@ export default function App() {
 
 	const login = async () => {
 		const provider = new GoogleAuthProvider()
-		await signInWithPopup(auth, provider)
+		const result = await signInWithPopup(auth, provider)
+		const user = result.user
+		if (user) {
+			const idToken = await user.getIdToken()
+			try {
+				await fetch('http://localhost:5000/login', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ idToken })
+				})
+			} catch (err) {
+				console.error('Failed to login to backend:', err)
+			}
+		}
 		navigate('/')
 	}
 

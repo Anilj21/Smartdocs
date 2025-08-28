@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { uploadFile } from '../api'
+import axios from 'axios'
 
 export default function Upload({ user }) {
 	const [file, setFile] = useState(null)
@@ -47,25 +47,40 @@ export default function Upload({ user }) {
 		setMessage('✅ File selected successfully!')
 	}
 
+	const [uploadedUrl, setUploadedUrl] = useState('');
 	const onSubmit = async (e) => {
 		e.preventDefault()
 		if (!file) return
-		
 		setIsUploading(true)
 		setMessage('')
 		setProgress(0)
-		
+		setUploadedUrl('')
 		try {
-			const res = await uploadFile(user.uid, file, (evt) => {
-				if (evt.total) setProgress(Math.round((evt.loaded * 100) / evt.total))
-			})
-			setMessage(`🎉 Successfully uploaded: ${res.filename}`)
-			setFile(null)
-			setProgress(0)
+			const form = new FormData();
+			form.append('file', file);
+			// Get Firebase ID token for auth header
+			const token = user && (await user.getIdToken());
+			const res = await axios.post(
+				'http://localhost:5000/upload',
+				form,
+				{
+					headers: {
+						'Content-Type': 'multipart/form-data',
+						Authorization: `Bearer ${token}`
+					},
+					onUploadProgress: (evt) => {
+						if (evt.total) setProgress(Math.round((evt.loaded * 100) / evt.total));
+					}
+				}
+			);
+			setMessage(`🎉 Successfully uploaded: ${res.data.filename}`);
+			setUploadedUrl(`http://localhost:5000`+res.data.url);
+			setFile(null);
+			setProgress(0);
 		} catch (e) {
-			setMessage('❌ Upload failed. Please try again.')
+			setMessage('❌ Upload failed. Please try again.');
 		} finally {
-			setIsUploading(false)
+			setIsUploading(false);
 		}
 	}
 
@@ -203,18 +218,23 @@ export default function Upload({ user }) {
 						</div>
 					)}
 
-					{/* Message */}
-					{message && (
-						<div className={`mt-6 p-4 rounded-lg ${
-							message.includes('❌') 
-								? 'bg-red-50 text-red-800 border border-red-200' 
-								: message.includes('🎉')
-								? 'bg-green-50 text-green-800 border border-green-200'
-								: 'bg-blue-50 text-blue-800 border border-blue-200'
-						}`}>
-							{message}
-						</div>
-					)}
+						{/* Message */}
+						{message && (
+							<div className={`mt-6 p-4 rounded-lg ${
+								message.includes('❌') 
+									? 'bg-red-50 text-red-800 border border-red-200' 
+									: message.includes('🎉')
+									? 'bg-green-50 text-green-800 border border-green-200'
+									: 'bg-blue-50 text-blue-800 border border-blue-200'
+							}`}>
+								{message}
+								{uploadedUrl && (
+									<div className="mt-2">
+										<a href={uploadedUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Uploaded File</a>
+									</div>
+								)}
+							</div>
+						)}
 				</div>
 			</div>
 
