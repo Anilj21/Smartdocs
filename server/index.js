@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
     cb(null, path.join(__dirname, 'public', 'uploads'));
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, file.originalname);
   }
 });
 const upload = multer({ storage: storage });
@@ -55,11 +55,34 @@ app.post('/login', async (req, res) => {
 });
 
 // File upload endpoint (protected)
+const fs = require('fs');
+const FILES_DB = path.join(__dirname, 'public', 'uploads', 'files.json');
+
+function saveUserFile(uid, filename) {
+  let db = {};
+  if (fs.existsSync(FILES_DB)) {
+    db = JSON.parse(fs.readFileSync(FILES_DB, 'utf-8'));
+  }
+  if (!db[uid]) db[uid] = [];
+  if (!db[uid].includes(filename)) db[uid].push(filename);
+  fs.writeFileSync(FILES_DB, JSON.stringify(db, null, 2));
+}
+
 app.post('/upload', authenticateToken, upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  // Return a public URL for the uploaded file
-  const publicUrl = `/public/uploads/${req.file.filename}`;
-  res.json({ filename: req.file.filename, url: publicUrl });
+  const publicUrl = `/public/uploads/${req.file.originalname}`;
+  saveUserFile(req.user.uid, req.file.originalname);
+  res.json({ filename: req.file.originalname, url: publicUrl });
+});
+
+// Endpoint to get user files
+app.get('/files', authenticateToken, (req, res) => {
+  let db = {};
+  if (fs.existsSync(FILES_DB)) {
+    db = JSON.parse(fs.readFileSync(FILES_DB, 'utf-8'));
+  }
+  const files = db[req.user.uid] || [];
+  res.json({ files });
 });
 
 // Health check
