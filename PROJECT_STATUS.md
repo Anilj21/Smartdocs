@@ -122,3 +122,4 @@ Your SmartDocs project is now fully functional with:
 - 📁 **File Storage**: `backend/uploads/` folder
 
 The project is ready for testing and use! 🎉
+
