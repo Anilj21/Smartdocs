@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import Upload from './pages/Upload'
 import Quiz from './pages/Quiz'
 import DocumentView from './pages/DocumentView'
+import SummaryChat from './pages/SummaryChat'
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth'
 import './firebase'
 
@@ -16,9 +17,14 @@ export default function App() {
 	useEffect(() => {
 		return onAuthStateChanged(auth, (u) => {
 			setUser(u)
-			if (!u) navigate('/login')
+			if (!u && location.pathname !== '/login') {
+				navigate('/login')
+			}
+			if (u && location.pathname === '/login') {
+				navigate('/')
+			}
 		})
-	}, [])
+	}, [location.pathname])
 
 	const login = async () => {
 		const provider = new GoogleAuthProvider()
@@ -76,6 +82,9 @@ export default function App() {
 								<NavLink to="/quiz" isActive={isActive('/quiz')} icon="❓">
 									Quiz
 								</NavLink>
+								<NavLink to="/summary" isActive={isActive('/summary')} icon="📝">
+									Summary
+								</NavLink>
 							</div>
 						)}
 
@@ -121,13 +130,14 @@ export default function App() {
 
 			{/* Main Content */}
 			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				<Routes>
-					<Route path="/" element={<Dashboard user={user} />} />
-					<Route path="/upload" element={<Upload user={user} />} />
-					<Route path="/quiz" element={<Quiz user={user} />} />
-					<Route path="/login" element={<LoginPage onLogin={login} />} />
-					<Route path="/document/:filename" element={<DocumentView />} />
-				</Routes>
+				   <Routes>
+					   <Route path="/login" element={<LoginPage onLogin={login} />} />
+					   <Route path="/" element={<Dashboard user={user} />} />
+					   <Route path="/upload" element={<Upload user={user} />} />
+					   <Route path="/quiz" element={<Quiz user={user} />} />
+					   <Route path="/document/:filename" element={<DocumentView />} />
+					   <Route path="/summary" element={<SummaryChat user={user} />} />
+				   </Routes>
 			</main>
 		</div>
 	)

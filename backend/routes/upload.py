@@ -1,3 +1,32 @@
+from fastapi import Body
+
+# Delete file endpoint
+@router.delete("/delete-file")
+async def delete_file(
+	filename: str = Body(...),
+	user_id: str = Query(...)
+):
+	try:
+		# Find file in uploads dir
+		upload_dir = get_upload_dir()
+		file_path = os.path.join(upload_dir, filename)
+		if not os.path.exists(file_path):
+			raise HTTPException(status_code=404, detail="File not found")
+
+		# Remove file from disk
+		os.remove(file_path)
+
+		# Remove metadata from Firestore
+		db = get_db()
+		# Find the file doc for this user and filename
+		docs = db.collection("files").where("user_id", "==", user_id).where("filename", "==", filename).stream()
+		for doc in docs:
+			doc.reference.delete()
+
+		return {"detail": "File deleted"}
+	except Exception as e:
+		print(f"Delete file error: {str(e)}")
+		raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
 import os
 import shutil
 from datetime import datetime, timezone

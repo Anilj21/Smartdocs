@@ -1,7 +1,10 @@
+
 import { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios'
 
 export default function Upload({ user }) {
+	const navigate = useNavigate();
 	const [file, setFile] = useState(null)
 	const [progress, setProgress] = useState(0)
 	const [message, setMessage] = useState('')
@@ -30,11 +33,11 @@ export default function Upload({ user }) {
 	}, [])
 
 	const handleFileSelect = (selectedFile) => {
-		const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.presentationml.presentation']
+		const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 		const maxSize = 25 * 1024 * 1024 // 25MB
 
 		if (!allowedTypes.includes(selectedFile.type)) {
-			setMessage('❌ Please select a valid file type (PDF, DOCX, or PPTX)')
+			setMessage('❌ Please select a valid file type (PDF or DOCX)')
 			return
 		}
 
@@ -73,12 +76,24 @@ export default function Upload({ user }) {
 					}
 				}
 			);
-			setMessage(`🎉 Successfully uploaded: ${res.data.filename}`);
-			setUploadedUrl(`http://localhost:5000`+res.data.url);
+				setMessage(`🎉 Successfully uploaded: ${res.data.filename}`);
+				const url = `http://localhost:5000${res.data.url}`;
+				setUploadedUrl(url);
+				// Save file info for summary chat
+				if (url && res.data.filename) {
+					localStorage.setItem('summaryChat_lastFile', JSON.stringify({ fileUrl: url, fileName: res.data.filename }));
+				}
 			setFile(null);
 			setProgress(0);
 		} catch (e) {
-			setMessage('❌ Upload failed. Please try again.');
+			let errorMsg = '❌ Upload failed.';
+			if (e.response && e.response.data && (e.response.data.error || e.response.data.details)) {
+				errorMsg += ' ' + (e.response.data.error || '');
+				if (e.response.data.details) errorMsg += ': ' + e.response.data.details;
+			} else if (e.message) {
+				errorMsg += ' ' + e.message;
+			}
+			setMessage(errorMsg);
 		} finally {
 			setIsUploading(false);
 		}
@@ -89,8 +104,7 @@ export default function Upload({ user }) {
 		switch (file.type) {
 			case 'application/pdf': return '📄'
 			case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': return '📝'
-			case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': return '📊'
-			default: return '📁'
+			default: return ''
 		}
 	}
 
@@ -142,14 +156,14 @@ export default function Upload({ user }) {
 									Browse Files
 									<input
 										type="file"
-										accept=".pdf,.docx,.pptx"
+										accept=".pdf,.docx"
 										onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
 										className="hidden"
 									/>
 								</label>
 							</div>
 							<p className="text-sm text-gray-500">
-								Supported formats: PDF, DOCX, PPTX (Max size: 25MB)
+								Supported formats: PDF, DOCX (Max size: 25MB)
 							</p>
 						</div>
 					</div>
@@ -248,6 +262,28 @@ export default function Upload({ user }) {
 					</div>
 					<h3 className="font-semibold text-gray-900 mb-2">AI Summarization</h3>
 					<p className="text-sm text-gray-600">Get intelligent summaries and key points from your documents</p>
+								<button
+									className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+													onClick={() => {
+														if (!uploadedUrl) {
+															setMessage('❌ Please upload a document first.');
+															return;
+														}
+														// Use the file name from the upload response (stored in localStorage)
+														let fileName = '';
+														try {
+															const lastFile = localStorage.getItem('summaryChat_lastFile');
+															if (lastFile) fileName = JSON.parse(lastFile).fileName;
+														} catch {}
+														if (uploadedUrl && fileName) {
+															localStorage.setItem('summaryChat_lastFile', JSON.stringify({ fileUrl: uploadedUrl, fileName }));
+														}
+														navigate('/summary', { state: { fileUrl: uploadedUrl, fileName } });
+													}}
+													disabled={!uploadedUrl}
+												>
+													Summarize with AI
+												</button>
 				</div>
 
 				<div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 text-center">
