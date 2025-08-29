@@ -19,6 +19,9 @@ build/
 # Logs
 *.log
 
+#firebase
+firebase-service-account.json
+
 # System files
 .DS_Store
 Thumbs.db
