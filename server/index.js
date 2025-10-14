@@ -90,7 +90,28 @@ app.get('/', (req, res) => {
   res.send('Express backend is running');
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const PORT_ENV = process.env.PORT && Number(process.env.PORT)
+const DEFAULT_PORT = Number.isFinite(PORT_ENV) ? PORT_ENV : 5000
+
+function tryListen(startPort, maxTries = 10) {
+  let attempt = 0
+  function listenOn(port) {
+    const server = app.listen(port, () => {
+      console.log(`Server running on port ${port}`)
+    })
+    server.on('error', (err) => {
+      if (err && err.code === 'EADDRINUSE' && attempt < maxTries) {
+        attempt += 1
+        const nextPort = port + 1
+        console.warn(`Port ${port} in use, trying ${nextPort}...`)
+        listenOn(nextPort)
+      } else {
+        console.error('Failed to start server:', err)
+        process.exit(1)
+      }
+    })
+  }
+  listenOn(startPort)
+}
+
+tryListen(DEFAULT_PORT)

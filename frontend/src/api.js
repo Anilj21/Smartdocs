@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getAuth } from 'firebase/auth'
 
 const api = axios.create({
-	baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+	baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
 })
 
 // Attach Firebase ID token if available
