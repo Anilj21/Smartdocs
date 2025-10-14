@@ -1,0 +1,212 @@
+{
+  "lJHXNYdV3JRagRcGDqugsCgRFMk2": {
+    "items": {
+      "quiz:Rabbit_and_Tortoise_Summary.docx": {
+        "id": "quiz:Rabbit_and_Tortoise_Summary.docx",
+        "kind": "quiz",
+        "filename": "Rabbit_and_Tortoise_Summary.docx",
+        "title": "Rabbit_and_Tortoise_Summary.docx (quiz)",
+        "savedAt": "2025-10-14T19:32:44.468Z",
+        "data": {
+          "questions": [
+            {
+              "question": "What is the moral of the story about the Rabbit and the Tortoise?",
+              "options": [
+                "Perseverance and arrogance win the race",
+                "Slow and steady loses the race",
+                "Hard work and determination are key to success",
+                "Slow and steady wins the race"
+              ],
+              "answer": "D",
+              "explanation": "The moral of the story emphasizes the importance of perseverance and steady effort."
+            },
+            {
+              "question": "What happens to the Rabbit during the race?",
+              "options": [
+                "He continues running steadily without stopping",
+                "He takes a nap midway through the race",
+                "He gets distracted by other animals",
+                "He loses his confidence"
+              ],
+              "answer": "B",
+              "explanation": "The story states that the Rabbit is confident of his victory, but he takes a nap midway through the race."
+            },
+            {
+              "question": "What does the story teach about the characters?",
+              "options": [
+                "It teaches them to be arrogant and overconfident",
+                "It teaches them the value of humility and perseverance",
+                "It teaches them that speed is more important than endurance",
+                "It teaches them to give up easily"
+              ],
+              "answer": "B",
+              "explanation": "The story emphasizes the importance of perseverance, humility, and steady effort, teaching valuable lessons about these character traits."
+            }
+          ]
+        }
+      },
+      "summary:Blockchain- 2 chapter.pdf": {
+        "id": "summary:Blockchain- 2 chapter.pdf",
+        "kind": "summary",
+        "filename": "Blockchain- 2 chapter.pdf",
+        "title": "Blockchain- 2 chapter.pdf (summary)",
+        "savedAt": "2025-10-14T19:41:40.946Z",
+        "data": {
+          "summary": "The provided text is a collection of notes on various topics related to Bitcoin and blockchain technology. Here's a breakdown of the main points covered:\n\n**Bitcoin Basics**\n\n* Bitcoin mining refers to ensuring that transactions are valid and added to the Bitcoin blockchain correctly using a global network of computers running the Bitcoin code.\n* The process of mining involves verifying new transactions against the Bitcoin network, which results in the production of new bitcoin.\n\n**Block Propagation**\n\n* Block propagation time or block propagation delay determines the limits of Bitcoin’s scaling.\n* It's an average time that is needed for the new block to reach the majority of nodes in the network.\n* Researchers have found that for blocks larger than 20kB, the block propagation delay is nearly proportional to the block size.\n\n**Bitcoin Network**\n\n* The Bitcoin P2P network is formed of miner nodes where the nodes randomly connect with each other.\n* Transactions and blocks are transmitted over this network by these nodes until each has received the message.\n* The diffusion increases exponentially as the hops increase, and after 12–15 hops, the entire network receives the message.\n\n**Block Propagation on Network Plane**\n\n* Blockchain throughput is measured by the number of transactions per second that it can support.\n* The current Block capacity for Bitcoin is 1MB for a Block interval of 10 minutes and given the average transaction size of nearly 540 bytes, the Bitcoin network currently processes ~1950 transactions per Block, which translates to ~3 transactions per second (TPS).\n\n**Bitcoin Relay Network**\n\n* The Bitcoin Relay Network is a system of peering between nodes in the network by creating a system of high-speed relay nodes for miners and merchants/exchanges.\n* This system acts as a fall back in the case that the public Bitcoin network encounters issues and decreases block propagation times between miners.\n\nOverall, these notes provide an overview of various aspects of Bitcoin and blockchain technology, including mining, block propagation, and the Bitcoin Relay Network."
+        }
+      },
+      "questionBank:Blockchain - Half chapter 3.pdf": {
+        "id": "questionBank:Blockchain - Half chapter 3.pdf",
+        "kind": "questionBank",
+        "filename": "Blockchain - Half chapter 3.pdf",
+        "title": "Blockchain - Half chapter 3.pdf (questionBank)",
+        "savedAt": "2025-10-14T19:44:54.394Z",
+        "data": {
+          "questions": [
+            {
+              "question": "What are the main topics discussed in the document?"
+            },
+            {
+              "question": "Explain a key concept introduced in the document in your own words."
+            },
+            {
+              "question": "How does one major idea in the document relate to another?"
+            }
+          ]
+        }
+      },
+      "questionBank:unit 1 Data Science-Lecture1 ppt 2025 Final(2).pdf": {
+        "id": "questionBank:unit 1 Data Science-Lecture1 ppt 2025 Final(2).pdf",
+        "kind": "questionBank",
+        "filename": "unit 1 Data Science-Lecture1 ppt 2025 Final(2).pdf",
+        "title": "unit 1 Data Science-Lecture1 ppt 2025 Final(2).pdf (questionBank)",
+        "savedAt": "2025-10-14T20:06:05.995Z",
+        "data": {
+          "questions": [
+            {
+              "question": "What are the main differences between Business Intelligence and Data Science?"
+            },
+            {
+              "question": "How does Data Science use statistics, scientific methods, processes, algorithms, and systems to extract knowledge and insights from data?"
+            },
+            {
+              "question": "What are some examples of applications where Data Science is used in real-world scenarios?"
+            },
+            {
+              "question": "Can you describe the process of Data Science, including its phases and techniques?"
+            },
+            {
+              "question": "How do Business Intelligence Tools differ from Data Science tools and technologies?"
+            },
+            {
+              "question": "What are the key characteristics that distinguish Data Science from Business Intelligence?"
+            },
+            {
+              "question": "In what ways can Data Science help businesses increase their business value and take a competitive advantage against their competitors?"
+            },
+            {
+              "question": "Can you provide an example of how Data Science is used in a specific industry, such as Healthcare or Finance?"
+            },
+            {
+              "question": "What are the main differences between the ETL (Extract-Transform-Load) process used for Business Intelligence applications and other processes?"
+            },
+            {
+              "question": "How does Data Science help companies anticipate future scenarios to reduce risk and increase income?"
+            },
+            {
+              "question": "What is the primary goal of a Data Analyst in terms of data collection, processing, and statistical analysis?"
+            },
+            {
+              "question": "What are some key characteristics that distinguish Data Science from Business Intelligence?"
+            },
+            {
+              "question": "What are the main steps involved in the Data Analytic Life Cycle (DALC) process?"
+            },
+            {
+              "question": "How does Phase 1: Discovery in the DALC process involve understanding business specifications, requirements, priorities, and budget?"
+            },
+            {
+              "question": "What is the purpose of Exploratory Data Analytics (EDA) in the Model Planning phase of the DALC process?"
+            },
+            {
+              "question": "What are some common tools used for data preparation and model building in the DALC process?"
+            },
+            {
+              "question": "What are the main steps involved in Phase 3: Model Planning of the Data Analytic Life Cycle (DALC) process?"
+            },
+            {
+              "question": "How does the Decision Tree model take into consideration both linear and nonlinear relationships between attributes in a dataset?"
+            },
+            {
+              "question": "What are some common measures of dispersion and how do they characterize the spread-out of data?"
+            },
+            {
+              "question": "How does a normal distribution, also known as a bell curve, relate to natural phenomena and large-scale systems in computer engineering?"
+            }
+          ]
+        }
+      },
+      "questionBank:Rabbit_and_Tortoise_Summary.docx": {
+        "id": "questionBank:Rabbit_and_Tortoise_Summary.docx",
+        "kind": "questionBank",
+        "filename": "Rabbit_and_Tortoise_Summary.docx",
+        "title": "Rabbit_and_Tortoise_Summary.docx (questionBank)",
+        "savedAt": "2025-10-14T20:55:22.835Z",
+        "data": {
+          "questions": [
+            {
+              "question": "What was the outcome of the race between the Rabbit and the Tortoise?"
+            },
+            {
+              "question": "Why did the Rabbit take a nap during the race?"
+            },
+            {
+              "question": "What lesson can be learned from the story of the Rabbit and the Tortoise?"
+            },
+            {
+              "question": "How did the Tortoise's steady pace help him win the race?"
+            },
+            {
+              "question": "What was the initial attitude of the Rabbit towards the Tortoise before the race?"
+            },
+            {
+              "question": "Why is humility an important value in the story of the Rabbit and the Tortoise?"
+            },
+            {
+              "question": "How does the story of the Rabbit and the Tortoise relate to perseverance?"
+            },
+            {
+              "question": "What would have happened if the Rabbit had not taken a nap during the race?"
+            },
+            {
+              "question": "What was the Rabbit's initial attitude towards the Tortoise before the challenge?"
+            },
+            {
+              "question": "How did the Rabbit's overconfidence affect his performance in the race?"
+            }
+          ]
+        }
+      },
+      "summary:Rabbit_and_Tortoise_Summary.docx": {
+        "id": "summary:Rabbit_and_Tortoise_Summary.docx",
+        "kind": "summary",
+        "filename": "Rabbit_and_Tortoise_Summary.docx",
+        "title": "Rabbit_and_Tortoise_Summary.docx (summary)",
+        "savedAt": "2025-10-14T20:24:07.143Z",
+        "data": {
+          "summary": "Here is a concise summary of the document in bullet points:\n\n**Summary**\n\n* A fast but overconfident rabbit challenges a slow-moving tortoise to a race.\n* The rabbit takes a nap midway, thinking he has already won.\n* Meanwhile, the tortoise continues steadily without stopping and crosses the finish line first.\n* The moral of the story is: \"Slow and steady wins the race.\"\n\n**Key Points**\n\n* Importance of perseverance and humility\n* Dangers of overconfidence and complacency\n* Value of steady effort and determination over speed and talent"
+        }
+      },
+      "summary:Unit_2_Data_Science_ppt.pdf": {
+        "id": "summary:Unit_2_Data_Science_ppt.pdf",
+        "kind": "summary",
+        "filename": "Unit_2_Data_Science_ppt.pdf",
+        "title": "Unit_2_Data_Science_ppt.pdf (summary)",
+        "savedAt": "2025-10-14T20:48:55.388Z",
+        "data": {
+          "summary": "It appears you provided a large amount of text about statistical tests, including parametric and non-parametric tests. I'll provide a summary and answer any specific questions you may have.\n\n**Summary:**\n\nThe text covers various types of statistical tests, including:\n\n1. **Parametric Tests**: These tests assume that the data follows a specific distribution (e.g., normal distribution) and require interval or ratio scales.\n2. **Non-Parametric Tests**: These tests do not assume any specific distribution and can be used with ordinal or nominal data.\n\n**Types of Data:**\n\nThe text also covers different types of data, including:\n\n1. **Nominal Data**: Non-numerical values (e.g., blood grouping).\n2. **Ordinal Data**: Values that have a natural order or ranking.\n3. **Discrete Data**: Whole numbers or counts (e.g., number of suitcases lost).\n4. **Continuous Data**: Infinite possible values, often associated with physical measurements.\n\n**Parametric Test Procedures:**\n\nThe text outlines the procedures for parametric tests, which involve:\n\n1. Using population parameters (e.g., mean and standard deviation).\n2. Requiring interval or ratio scales.\n3. Assumptions about the underlying distribution (e.g., normal distribution).\n\n**Non-Parametric Test Procedures:**\n\nNon-parametric tests do not require specific conditions about the shape of populations or population parameters.\n\n**Wilcoxon Rank Sum Test (Mann-Whitney Utest):**\n\nThis is a non-parametric test used to assess whether two samples come from the same distribution. It requires independent observations and ordinal or continuous measurements.\n\n**Specific Questions:**\n\nIf you have any specific questions about statistical tests or data types, please let me know, and I'll do my best to answer them."
+        }
+      }
+    }
+  }
+}

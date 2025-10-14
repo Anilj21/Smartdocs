@@ -62,6 +62,7 @@ app.post('/login', async (req, res) => {
 const fs = require('fs');
 const FILES_DB = path.join(__dirname, 'public', 'uploads', 'files.json');
 const SUMMARIES_DB = path.join(__dirname, 'public', 'uploads', 'summaries.json');
+const SAVED_DB = path.join(__dirname, 'public', 'uploads', 'saved_items.json');
 
 // Add dependencies for summarization
 const pdfParse = require('pdf-parse');
@@ -91,6 +92,13 @@ function ensureUploadStore() {
     }
   } catch (err) {
     console.error('Failed to ensure summaries DB:', err);
+  }
+  try {
+    if (!fs.existsSync(SAVED_DB)) {
+      fs.writeFileSync(SAVED_DB, JSON.stringify({}, null, 2));
+    }
+  } catch (err) {
+    console.error('Failed to ensure saved items DB:', err);
   }
 }
 // Run once on startup
@@ -134,6 +142,148 @@ function getUserSummaries(uid) {
   const key = uid || 'public';
   const db = readJsonSafe(SUMMARIES_DB);
   return db[key] || {};
+}
+
+// Unified saved items store (summaries, quizzes, question banks)
+function saveUserItem(uid, kind, filename, data) {
+  ensureUploadStore();
+  const key = uid || 'public';
+  const db = readJsonSafe(SAVED_DB);
+  if (!db[key]) db[key] = { items: {} };
+  const id = `${kind}:${filename}`;
+  db[key].items[id] = {
+    id,
+    kind,
+    filename,
+    title: `${filename} (${kind})`,
+    savedAt: new Date().toISOString(),
+    data
+  };
+  writeJsonSafe(SAVED_DB, db);
+}
+
+function getUserSaved(uid) {
+  const key = uid || 'public';
+  const db = readJsonSafe(SAVED_DB);
+  return (db[key] && db[key].items) || {};
+}
+
+function getUserSavedItem(uid, kind, filename) {
+  const items = getUserSaved(uid);
+  const id = `${kind}:${filename}`;
+  return items[id] || null;
+}
+
+// ---- Grounded question generation helpers ----
+function sliceIntoChunks(str, chunkSize = 6000) {
+  const chunks = [];
+  for (let i = 0; i < str.length; i += chunkSize) chunks.push(str.slice(i, i + chunkSize));
+  return chunks;
+}
+
+function appearsInText(q, text) {
+  try {
+    const stop = new Set(['the','is','and','of','to','in','a','for','on','as','by','with','that','this','an','at','from','it','be','are','or','was','were','can','may']);
+    const words = String(q || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w && !stop.has(w));
+    const t = String(text || '').toLowerCase();
+    let hits = 0;
+    for (const w of words) { if (t.includes(w)) { hits++; if (hits >= 3) return true; } }
+    return words.length <= 3 ? hits >= 1 : false;
+  } catch { return true; }
+}
+
+async function chatJSON({ systemPrompt, userPrompt }) {
+  const resp = await axios.post('http://localhost:11434/api/chat', {
+    model: 'llama3.1:8b',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    stream: false,
+    options: { temperature: 0.2, top_p: 0.9, repeat_penalty: 1.1 }
+  });
+  const data = resp.data;
+  let content = '';
+  if (data && data.message && data.message.content) content = data.message.content;
+  else if (data && data.response) content = data.response;
+  else content = JSON.stringify(data);
+  // clean code fences if any
+  let t = String(content || '').trim();
+  if (t.startsWith('```json')) t = t.slice(7);
+  if (t.endsWith('```')) t = t.slice(0, -3);
+  try { return JSON.parse(t); } catch { return null; }
+}
+
+async function generateGroundedMCQs({ text, num }) {
+  const chunks = sliceIntoChunks(text, 8000);
+  const results = [];
+  const seen = new Set();
+  let remaining = Math.max(1, Math.min(50, num));
+  const maxPasses = Math.max(chunks.length * 2, 3);
+  let pass = 0;
+  while (results.length < num && pass < maxPasses) {
+    const chunk = chunks[pass % chunks.length];
+    const batch = Math.min(6, remaining);
+    const systemPrompt = `You are an expert educator and careful fact-checker. Create high-quality multiple choice questions strictly and only from the provided document text. Do not use outside knowledge. If a potential question cannot be fully supported by the document, do not include it. Always return valid JSON only.`;
+    const prevList = results.map((q, i) => `${i+1}. ${q.question}`).join('\n');
+    const userPrompt = `Create ${batch} MCQs grounded in the provided document CHUNK. Requirements:\n- Each question must be fully answerable using only this chunk\n- Exactly 4 options (A, B, C, D)\n- Provide the correct answer letter among A, B, C, D\n- Include a brief explanation grounded in the chunk\n- Avoid repeating any of these existing questions:\n${prevList || '(none)'}\n\nReturn JSON of the form:\n{\n  \"questions\": [\n    {\n      \"question\": \"...\",\n      \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n      \"answer\": \"A\",\n      \"explanation\": \"...\"\n    }\n  ]\n}\n\nDocument CHUNK:\n${chunk}`;
+
+    const parsed = await chatJSON({ systemPrompt, userPrompt });
+    if (parsed && Array.isArray(parsed.questions)) {
+      for (const item of parsed.questions) {
+        if (!item) continue;
+        if (typeof item === 'object' && item.question && Array.isArray(item.options) && item.options.length === 4 && typeof item.answer === 'string') {
+          const q = String(item.question).trim();
+          if (!q || seen.has(q)) continue;
+          if (!appearsInText(q, text)) continue;
+          const opts = item.options.map(o => String(o).trim()).slice(0, 4);
+          const ans = String(item.answer).trim().toUpperCase();
+          const expl = item.explanation ? String(item.explanation) : '';
+          if (q && opts.every(Boolean) && ['A','B','C','D'].includes(ans)) {
+            results.push({ question: q, options: opts, answer: ans, explanation: expl });
+            seen.add(q);
+            if (results.length >= num) break;
+          }
+        }
+      }
+    }
+    remaining = num - results.length;
+    pass++;
+  }
+  return results;
+}
+
+async function generateGroundedOpenQuestions({ text, num }) {
+  const chunks = sliceIntoChunks(text, 9000);
+  const results = [];
+  const seen = new Set();
+  let remaining = Math.max(1, Math.min(50, num));
+  const maxPasses = Math.max(chunks.length * 2, 3);
+  let pass = 0;
+  while (results.length < num && pass < maxPasses) {
+    const chunk = chunks[pass % chunks.length];
+    const batch = Math.min(8, remaining);
+    const systemPrompt = `You are an expert educator and careful fact-checker. Generate clear, open-ended questions strictly and only from the provided document text. Do not use outside knowledge. If a question cannot be fully supported by the document, do not include it. Do NOT include answers, options, or explanations. Always return valid JSON only.`;
+    const prevList = results.map((q, i) => `${i+1}. ${q.question}`).join('\n');
+    const userPrompt = `Create ${batch} open-ended questions grounded in the provided document CHUNK. Requirements:\n- Each question must be fully answerable using only this chunk\n- Questions must be stand-alone and unambiguous\n- Avoid repeating any of these existing questions:\n${prevList || '(none)'}\n\nReturn JSON exactly in this form:\n{\n  \"questions\": [\n    \"Question 1?\",\n    \"Question 2?\"\n  ]\n}\n\nDocument CHUNK:\n${chunk}`;
+
+    const parsed = await chatJSON({ systemPrompt, userPrompt });
+    if (parsed && Array.isArray(parsed.questions)) {
+      for (const item of parsed.questions) {
+        let q = '';
+        if (typeof item === 'string') q = item.trim();
+        else if (typeof item === 'object' && item.question) q = String(item.question).trim();
+        if (!q || seen.has(q)) continue;
+        if (!appearsInText(q, text)) continue;
+        results.push({ question: q });
+        seen.add(q);
+        if (results.length >= num) break;
+      }
+    }
+    remaining = num - results.length;
+    pass++;
+  }
+  return results;
 }
 
 app.post('/upload', authenticateToken, upload.single('file'), (req, res) => {
@@ -238,6 +388,9 @@ app.post('/summarize', authenticateToken, async (req, res) => {
     if (!userMessage) {
       // Save only initial summaries
       saveUserSummary(req.user?.uid, filename, content);
+      try {
+        saveUserItem(req.user?.uid, 'summary', filename, { summary: content });
+      } catch {}
     }
     res.json({ summary: content });
   } catch (err) {
@@ -277,6 +430,61 @@ app.get('/summary-public', (req, res) => {
   res.json(s);
 });
 
+// Saved items: list all (auth)
+app.get('/saved-items', authenticateToken, (req, res) => {
+  const items = getUserSaved(req.user?.uid);
+  res.json({ items });
+});
+
+// Saved item: get single (auth)
+app.get('/saved-item', authenticateToken, (req, res) => {
+  const { kind, fileName } = req.query;
+  if (!kind || !fileName) return res.status(400).json({ error: 'kind and fileName are required' });
+  const item = getUserSavedItem(req.user?.uid, String(kind), String(fileName));
+  if (!item) return res.status(404).json({ error: 'Saved item not found' });
+  res.json(item);
+});
+
+// Download saved item as .doc (auth)
+app.get('/saved-item/download', authenticateToken, (req, res) => {
+  const { kind, fileName } = req.query;
+  if (!kind || !fileName) return res.status(400).json({ error: 'kind and fileName are required' });
+  const item = getUserSavedItem(req.user?.uid, String(kind), String(fileName));
+  if (!item) return res.status(404).json({ error: 'Saved item not found' });
+
+  // Generate basic DOC-compatible text content
+  let content = `Title: ${item.title}\nDate: ${new Date(item.savedAt).toLocaleString()}\nType: ${item.kind}\nFile: ${item.filename}\n\n`;
+  if (item.kind === 'summary') {
+    content += String(item.data?.summary || '');
+  } else if (item.kind === 'quiz') {
+    const qs = Array.isArray(item.data?.questions) ? item.data.questions : [];
+    qs.forEach((q, i) => {
+      content += `Q${i + 1}. ${q.question || ''}\n`;
+      if (Array.isArray(q.options)) {
+        ['A','B','C','D'].forEach((label, idx) => {
+          if (q.options[idx] != null) content += `  ${label}. ${q.options[idx]}\n`;
+        });
+      }
+      if (q.answer) content += `Answer: ${q.answer}\n`;
+      if (q.explanation) content += `Explanation: ${q.explanation}\n`;
+      content += `\n`;
+    });
+  } else if (item.kind === 'questionBank') {
+    const qs = Array.isArray(item.data?.questions) ? item.data.questions : [];
+    qs.forEach((q, i) => {
+      const text = typeof q === 'string' ? q : (q?.question || '');
+      content += `Q${i + 1}. ${text}\n\n`;
+    });
+  } else {
+    content += JSON.stringify(item.data || {}, null, 2);
+  }
+
+  const safeName = `${item.filename.replace(/[^a-zA-Z0-9_.-]/g, '_')}_${item.kind}.doc`;
+  res.setHeader('Content-Type', 'application/msword');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+  res.send(content);
+});
+
 // Quiz generation endpoint
 app.post('/quiz', authenticateToken, async (req, res) => {
   try {
@@ -284,12 +492,12 @@ app.post('/quiz', authenticateToken, async (req, res) => {
     if (!file_id) {
       return res.status(400).json({ error: 'file_id is required' });
     }
-
+  
     // file_id is the filename saved in uploads
     const uploadsDir = path.join(__dirname, 'public', 'uploads');
     const filename = path.basename(file_id);
     const filePath = path.join(uploadsDir, filename);
-
+  
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
@@ -314,87 +522,47 @@ app.post('/quiz', authenticateToken, async (req, res) => {
       return res.status(500).json({ error: 'Failed to extract text', details: err.message });
     }
 
-    // Prompt Ollama to generate quiz in strict JSON
-    const systemPrompt = `You are an expert educator. Create high-quality multiple choice questions strictly from the provided document content. Always return valid JSON only.`;
-    const userPrompt = `Create ${num_questions} MCQs from this content. Requirements:\n- Each question must have exactly 4 options (A, B, C, D)\n- Provide the correct answer as a single letter among A, B, C, D\n- Include a brief explanation\n\nReturn JSON of the form:\n{\n  "questions": [\n    {\n      "question": "...",\n      "options": ["Option A", "Option B", "Option C", "Option D"],\n      "answer": "A",\n      "explanation": "..."\n    }\n  ]\n}\n\nDocument content:\n${text.substring(0, 12000)}`; // limit to avoid overlong payload
-
-    let content = '';
-    try {
-      const ollamaRes = await axios.post('http://localhost:11434/api/chat', {
-        model: 'llama3.1:8b',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        stream: false
-      });
-      if (ollamaRes.data && ollamaRes.data.message && ollamaRes.data.message.content) {
-        content = ollamaRes.data.message.content;
-      } else if (ollamaRes.data.response) {
-        content = ollamaRes.data.response;
-      } else {
-        content = JSON.stringify(ollamaRes.data);
-      }
-    } catch (err) {
-      console.error('Ollama error:', err.message);
-      return res.status(500).json({ error: 'Failed to get response from Ollama', details: err.message });
-    }
-
-    // Try to parse JSON; clean code fences if present
-    function tryParseJSON(text) {
-      let t = (text || '').trim();
-      if (t.startsWith('```json')) t = t.slice(7);
-      if (t.endsWith('```')) t = t.slice(0, -3);
-      try { return JSON.parse(t); } catch { return null; }
-    }
-
-    const parsed = tryParseJSON(content);
-    let questions = [];
-    if (parsed && Array.isArray(parsed.questions)) {
-      for (const q of parsed.questions.slice(0, num_questions)) {
-        if (!q || !q.question || !Array.isArray(q.options) || !q.answer) continue;
-        // Normalize options to 4
-        const opts = q.options.slice(0, 4);
-        while (opts.length < 4) opts.push('');
-        // Normalize answer to A-D
-        const ans = String(q.answer).trim().toUpperCase();
-        const validAns = ['A','B','C','D'].includes(ans) ? ans : 'A';
-        questions.push({
-          question: String(q.question),
-          options: opts,
-          answer: validAns,
-          explanation: q.explanation ? String(q.explanation) : ''
-        });
-      }
-    }
+    // Generate grounded MCQs iteratively across document chunks
+    let questions = await generateGroundedMCQs({ text, num: num_questions });
 
     // Fallback if parsing failed or empty
     if (!questions.length) {
       questions = [
         {
-          question: 'Based on the provided material, what is a key concept discussed?',
-          options: ['Concept A', 'Concept B', 'Concept C', 'Concept D'],
+          question: 'Placeholder question due to parsing failure.',
+          options: ['A', 'B', 'C', 'D'],
           answer: 'A',
-          explanation: 'Fallback question – ensure Ollama is running for AI-generated questions.'
+          explanation: 'Fallback because model returned invalid JSON.'
         }
-      ];
+      ].slice(0, num_questions);
     }
 
-    res.json({ file_id, num_questions: questions.length, questions });
+    // Ensure exactly num_questions by padding with placeholders if needed
+    while (questions.length < num_questions) {
+      questions.push({
+        question: `Placeholder question ${questions.length + 1}`,
+        options: ['A', 'B', 'C', 'D'],
+        answer: 'A',
+        explanation: ''
+      });
+    }
+
+    try { saveUserItem(req.user?.uid, 'quiz', filename, { questions }); } catch {}
+    return res.json({ file_id, num_questions: questions.length, questions });
   } catch (error) {
     console.error('Quiz generation error:', error);
-    res.status(500).json({ error: 'Failed to generate quiz' });
+    return res.status(500).json({ error: 'Failed to generate quiz' });
   }
 });
 
-// Question bank generation endpoint
+// Question bank endpoint
 app.post('/question-bank', authenticateToken, async (req, res) => {
   try {
     const { file_id, num_questions = 10 } = req.body;
     if (!file_id) {
       return res.status(400).json({ error: 'file_id is required' });
     }
-
+  
     // file_id is the filename saved in uploads
     const uploadsDir = path.join(__dirname, 'public', 'uploads');
     const filename = path.basename(file_id);
@@ -403,7 +571,7 @@ app.post('/question-bank', authenticateToken, async (req, res) => {
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
-
+  
     // Extract text similar to quiz endpoint
     let text = '';
     try {
@@ -422,102 +590,28 @@ app.post('/question-bank', authenticateToken, async (req, res) => {
     } catch (err) {
       return res.status(500).json({ error: 'Failed to extract text', details: err.message });
     }
-
-    // Prompt Ollama to generate question bank in strict JSON
-    const systemPrompt = `You are an expert educator. Create comprehensive multiple choice questions from the provided document content. Focus on creating a diverse question bank covering different aspects of the content. Always return valid JSON only.`;
-    const userPrompt = `Create ${num_questions} MCQs from this content for a comprehensive question bank. Requirements:
-- Each question must have exactly 4 options (A, B, C, D)
-- Provide the correct answer as a single letter among A, B, C, D
-- Include a brief explanation
-- Cover different topics and difficulty levels from the document
-- Ensure questions test understanding, not just memorization
-
-Return JSON of the form:
-{
-  "questions": [
-    {
-      "question": "...",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "answer": "A",
-      "explanation": "..."
-    }
-  ]
-}
-
-Document content:
-${text.substring(0, 15000)}`; // limit to avoid overlong payload
-
-    let content = '';
-    try {
-      const ollamaRes = await axios.post('http://localhost:11434/api/chat', {
-        model: 'llama3.1:8b',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        stream: false
-      });
-      if (ollamaRes.data && ollamaRes.data.message && ollamaRes.data.message.content) {
-        content = ollamaRes.data.message.content;
-      } else if (ollamaRes.data.response) {
-        content = ollamaRes.data.response;
-      } else {
-        content = JSON.stringify(ollamaRes.data);
-      }
-    } catch (err) {
-      console.error('Ollama error:', err.message);
-      return res.status(500).json({ error: 'Failed to get response from Ollama', details: err.message });
-    }
-
-    // Try to parse JSON; clean code fences if present
-    function tryParseJSON(text) {
-      let t = (text || '').trim();
-      if (t.startsWith('```json')) t = t.slice(7);
-      if (t.endsWith('```')) t = t.slice(0, -3);
-      try { return JSON.parse(t); } catch { return null; }
-    }
-
-    const parsed = tryParseJSON(content);
-    let questions = [];
-    if (parsed && Array.isArray(parsed.questions)) {
-      for (const q of parsed.questions.slice(0, num_questions)) {
-        if (!q || !q.question || !Array.isArray(q.options) || !q.answer) continue;
-        // Normalize options to 4
-        const opts = q.options.slice(0, 4);
-        while (opts.length < 4) opts.push('');
-        // Normalize answer to A-D
-        const ans = String(q.answer).trim().toUpperCase();
-        const validAns = ['A','B','C','D'].includes(ans) ? ans : 'A';
-        questions.push({
-          question: String(q.question),
-          options: opts,
-          answer: validAns,
-          explanation: q.explanation ? String(q.explanation) : ''
-        });
-      }
-    }
+  
+    // Generate grounded open-ended questions iteratively across document chunks
+    let questions = await generateGroundedOpenQuestions({ text, num: num_questions });
 
     // Fallback if parsing failed or empty
     if (!questions.length) {
       questions = [
-        {
-          question: 'Based on the provided material, what is a key concept discussed?',
-          options: ['Concept A', 'Concept B', 'Concept C', 'Concept D'],
-          answer: 'A',
-          explanation: 'Fallback question – ensure Ollama is running for AI-generated questions.'
-        },
-        {
-          question: 'Which of the following is mentioned in the document?',
-          options: ['Option A', 'Option B', 'Option C', 'Option D'],
-          answer: 'B',
-          explanation: 'Fallback question – ensure Ollama is running for AI-generated questions.'
-        }
-      ];
+        { question: 'What are the main topics discussed in the document?' },
+        { question: 'Explain a key concept introduced in the document in your own words.' },
+        { question: 'How does one major idea in the document relate to another?' }
+      ].slice(0, num_questions);
     }
 
-    res.json({ file_id, num_questions: questions.length, questions });
+    // Ensure exactly num_questions by padding with placeholders if needed
+    while (questions.length < num_questions) {
+      questions.push({ question: `Placeholder question ${questions.length + 1}?` });
+    }
+
+    try { saveUserItem(req.user?.uid, 'questionBank', filename, { questions }); } catch {}
+    return res.json({ file_id, num_questions: questions.length, questions });
   } catch (error) {
     console.error('Question bank generation error:', error);
-    res.status(500).json({ error: 'Failed to generate question bank' });
+    return res.status(500).json({ error: 'Failed to generate question bank' });
   }
 });

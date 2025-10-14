@@ -1,0 +1,16 @@
+{
+  "jobs": {
+    "mgr1cfeo_qezp3ptpoqc": {
+      "id": "mgr1cfeo_qezp3ptpoqc",
+      "kind": "summary",
+      "uid": "lJHXNYdV3JRagRcGDqugsCgRFMk2",
+      "filename": "Unit_2_Data_Science_ppt.pdf",
+      "params": {},
+      "status": "running",
+      "createdAt": "2025-10-14T20:49:33.696Z",
+      "updatedAt": "2025-10-14T20:49:33.701Z",
+      "result": null,
+      "error": null
+    }
+  }
+}

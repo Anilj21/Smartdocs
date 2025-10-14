@@ -235,6 +235,7 @@ Format your response as valid JSON:
   ]
 }}
 
+
 Content to analyze:
 {context}
 
@@ -283,3 +284,32 @@ Return ONLY valid JSON, no additional text."""
 		})
 	return fallback_questions
 
+def generate_questions_from_chunks(chunks, num_questions):
+    """
+    Generate only questions (no options or answers)
+    based on provided text chunks.
+    """
+    from ollama import chat  # or your existing model import
+    combined_text = "\n".join(chunks)
+
+    prompt = f"""
+    Generate {num_questions} clear and concise **questions only** 
+    based on the following content.
+    Do NOT include answers or multiple-choice options.
+    Number each question sequentially.
+
+    Content:
+    {combined_text}
+    """
+
+    try:
+        response = chat(model="llama3", messages=[{"role": "user", "content": prompt}])
+        output = response['message']['content']
+
+        # Split into individual questions
+        questions = [q.strip() for q in output.split("\n") if q.strip()]
+        return questions
+
+    except Exception as e:
+        print(f"Error in generate_questions_from_chunks: {e}")
+        return []

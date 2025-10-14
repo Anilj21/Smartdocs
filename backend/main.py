@@ -7,7 +7,7 @@ from routes.upload import router as upload_router
 from routes.quiz import router as quiz_router
 from routes.summarize import router as summarize_router
 from db import initialize_firebase, close_firebase
-
+from routes import questionbank
 
 def ensure_directory(path: str) -> None:
 	if not os.path.exists(path):
@@ -60,3 +60,5 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+app.include_router(questionbank.router)

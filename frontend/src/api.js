@@ -84,5 +84,21 @@ export async function getSummary(fileName) {
 	}
 }
 
+// Saved items (summaries, quizzes, question banks)
+export async function listSavedItems() {
+  const { data } = await api.get('/saved-items')
+  return data // { items: { [id]: { id, kind, filename, title, savedAt, data } } }
+}
+
+export async function getSavedItem(kind, fileName) {
+  const { data } = await api.get('/saved-item', { params: { kind, fileName } })
+  return data
+}
+
+export async function downloadSavedItem(kind, fileName) {
+  const res = await api.get('/saved-item/download', { params: { kind, fileName }, responseType: 'blob' })
+  return res.data // Blob
+}
+
 export default api
 

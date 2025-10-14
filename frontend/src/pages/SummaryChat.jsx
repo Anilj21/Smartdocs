@@ -120,26 +120,26 @@ function SummaryChat({ user }) {
 
   return (
     <div className="max-w-2xl mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-4">AI Document Chat</h1>
-      <div className="mb-2 text-gray-600">File: <span className="font-mono">{fileName}</span></div>
-      <div className="bg-white rounded-lg shadow p-4 h-96 overflow-y-auto mb-4 flex flex-col relative">
+      <h1 className="text-3xl font-bold mb-4 text-slate-100">AI Document Chat</h1>
+      <div className="mb-2 text-slate-400">File: <span className="font-mono text-slate-300">{fileName}</span></div>
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-96 overflow-y-auto mb-4 flex flex-col relative text-slate-200">
         {messages.map((msg, i) => (
           <div key={i} className={`mb-2 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
             {msg.role === 'assistant' ? (
-              <div className="inline-block px-3 py-2 rounded-lg bg-gray-100 text-gray-800 text-left whitespace-pre-line">
+              <div className="inline-block px-3 py-2 rounded-lg bg-slate-800 text-slate-100 border border-slate-700 text-left whitespace-pre-line">
                 {msg.content
                   // Split summary into lines by bullet, dash, or newline, fallback to sentences
                   .split(/\n|\r|•|- |\u2022|\d+\. /g)
                   .filter(line => line.trim() !== '')
                   .map((line, idx) => (
                     <div key={idx} className="mb-1">
-                      <span className="font-semibold text-blue-700">• </span>
-                      <span className="font-medium">{line.trim()}</span>
+                      <span className="font-semibold text-sky-300">• </span>
+                      <span className="font-medium text-slate-100">{line.trim()}</span>
                     </div>
                   ))}
               </div>
             ) : (
-              <span className="inline-block px-3 py-2 rounded-lg bg-blue-100 text-blue-900">{msg.content}</span>
+              <span className="inline-block px-3 py-2 rounded-lg bg-sky-900/40 text-sky-200 border border-sky-800">{msg.content}</span>
             )}
           </div>
         ))}
@@ -147,20 +147,20 @@ function SummaryChat({ user }) {
           <div className="flex items-center gap-3 text-xs mt-2">
             {loading && (
               <>
-                <span className="text-gray-400">AI is typing...</span>
-                <span className="text-blue-500 font-semibold animate-pulse">{processSteps[processStep]}</span>
-                <span className="text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded shadow">⏳ {timer}s</span>
+                <span className="text-slate-400">AI is typing...</span>
+                <span className="text-sky-400 font-semibold animate-pulse">{processSteps[processStep]}</span>
+                <span className="text-slate-300 font-mono bg-slate-800 px-2 py-1 rounded border border-slate-700">⏳ {timer}s</span>
               </>
             )}
             {!loading && finalTime !== null && (
-              <span className="text-green-600 font-mono bg-gray-100 px-2 py-1 rounded shadow">✅ {finalTime}s</span>
+              <span className="text-emerald-300 font-mono bg-slate-800 px-2 py-1 rounded border border-slate-700">✅ {finalTime}s</span>
             )}
           </div>
         )}
       </div>
       <div className="flex gap-2">
         <input
-          className="flex-1 border rounded px-3 py-2"
+          className="flex-1 border border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 rounded px-3 py-2"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
@@ -168,7 +168,7 @@ function SummaryChat({ user }) {
           disabled={loading}
         />
         <button
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
+          className="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded disabled:bg-slate-700"
           onClick={sendMessage}
           disabled={loading || !input.trim()}
         >

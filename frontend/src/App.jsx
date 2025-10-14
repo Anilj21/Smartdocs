@@ -54,10 +54,30 @@ export default function App() {
 
 	const isActive = (path) => location.pathname === path
 
+	const [toasts, setToasts] = useState([])
+
+	// Lightweight global toast via window event
+	useEffect(() => {
+		function onToast(e) {
+			const id = Math.random().toString(36).slice(2)
+			const t = { id, ...(e.detail || {}), timeout: 2500 }
+			setToasts((prev) => [...prev, t])
+			setTimeout(() => {
+				setToasts((prev) => prev.filter(x => x.id !== id))
+			}, t.timeout)
+		}
+		window.addEventListener('toast', onToast)
+		return () => window.removeEventListener('toast', onToast)
+	}, [])
+
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+		<div className="min-h-screen relative">
+			{/* Background layers */}
+			<div className="app-bg"></div>
+			<div className="app-grid"></div>
+
 			{/* Modern Navigation */}
-			<nav className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm sticky top-0 z-50">
+			<nav className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 shadow-sm sticky top-0 z-50 text-slate-200">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between h-16">
 						{/* Logo */}
@@ -91,7 +111,7 @@ export default function App() {
 									Summary
 								</NavLink>
 								<NavLink to="/summaries" isActive={isActive('/summaries')} icon="📚">
-									Saved Summaries
+									Saved Items
 								</NavLink>
 							</div>
 						)}
@@ -104,15 +124,15 @@ export default function App() {
 										<img 
 											src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || user.email}&background=6366f1&color=fff`} 
 											alt="Profile" 
-											className="w-8 h-8 rounded-full border-2 border-gray-200"
+											className="w-8 h-8 rounded-full border-2 border-slate-700"
 										/>
-										<span className="hidden sm:block text-sm font-medium text-gray-700">
+										<span className="hidden sm:block text-sm font-medium text-slate-200">
 											{user.displayName || user.email}
 										</span>
 									</div>
 									<button 
 										onClick={logout} 
-										className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
+										className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
 									>
 										<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -137,7 +157,7 @@ export default function App() {
 			</nav>
 
 			{/* Main Content */}
-			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				   <Routes>
 					   <Route path="/login" element={<LoginPage onLogin={login} />} />
 					   <Route path="/" element={<Dashboard user={user} />} />
@@ -149,6 +169,19 @@ export default function App() {
 					   <Route path="/summaries" element={<SavedSummaries />} />
 				   </Routes>
 			</main>
+
+			{/* Toasts */}
+			<div className="fixed bottom-4 right-4 z-50 space-y-2">
+				{toasts.map(t => (
+					<div key={t.id} className={`px-4 py-2 rounded-lg border shadow text-sm ${
+						t.type === 'error' ? 'bg-rose-900/70 border-rose-800 text-rose-100' :
+						t.type === 'success' ? 'bg-emerald-900/70 border-emerald-800 text-emerald-100' :
+						'bg-slate-900/80 border-slate-800 text-slate-100'
+					}`}>
+						{t.message || 'Action completed'}
+					</div>
+				))}
+			</div>
 		</div>
 	)
 }
@@ -159,8 +192,8 @@ function NavLink({ to, children, isActive, icon }) {
 			to={to}
 			className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
 				isActive
-					? 'bg-blue-100 text-blue-700 border border-blue-200'
-					: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+					? 'bg-slate-800 text-sky-300 border border-slate-700'
+					: 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
 			}`}
 		>
 			<span className="text-lg">{icon}</span>
