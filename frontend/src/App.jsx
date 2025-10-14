@@ -5,6 +5,7 @@ import Upload from './pages/Upload'
 import Quiz from './pages/Quiz'
 import DocumentView from './pages/DocumentView'
 import SummaryChat from './pages/SummaryChat'
+import SavedSummaries from './pages/SavedSummaries'
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth'
 import './firebase'
 
@@ -85,6 +86,9 @@ export default function App() {
 								<NavLink to="/summary" isActive={isActive('/summary')} icon="📝">
 									Summary
 								</NavLink>
+								<NavLink to="/summaries" isActive={isActive('/summaries')} icon="📚">
+									Saved Summaries
+								</NavLink>
 							</div>
 						)}
 
@@ -137,6 +141,7 @@ export default function App() {
 					   <Route path="/quiz" element={<Quiz user={user} />} />
 					   <Route path="/document/:filename" element={<DocumentView />} />
 					   <Route path="/summary" element={<SummaryChat user={user} />} />
+					   <Route path="/summaries" element={<SavedSummaries />} />
 				   </Routes>
 			</main>
 		</div>

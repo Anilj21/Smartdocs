@@ -61,20 +61,79 @@ app.post('/login', async (req, res) => {
 // File upload endpoint (protected)
 const fs = require('fs');
 const FILES_DB = path.join(__dirname, 'public', 'uploads', 'files.json');
+const SUMMARIES_DB = path.join(__dirname, 'public', 'uploads', 'summaries.json');
 
 // Add dependencies for summarization
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const axios = require('axios');
 
-function saveUserFile(uid, filename) {
-  let db = {};
-  if (fs.existsSync(FILES_DB)) {
-    db = JSON.parse(fs.readFileSync(FILES_DB, 'utf-8'));
+// Paths and helpers
+function ensureUploadStore() {
+  const uploadsDir = path.join(__dirname, 'public', 'uploads');
+  try {
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+  } catch (err) {
+    console.error('Failed to ensure uploads directory:', err);
   }
+  try {
+    if (!fs.existsSync(FILES_DB)) {
+      fs.writeFileSync(FILES_DB, JSON.stringify({}, null, 2));
+    }
+  } catch (err) {
+    console.error('Failed to ensure files DB:', err);
+  }
+  try {
+    if (!fs.existsSync(SUMMARIES_DB)) {
+      fs.writeFileSync(SUMMARIES_DB, JSON.stringify({}, null, 2));
+    }
+  } catch (err) {
+    console.error('Failed to ensure summaries DB:', err);
+  }
+}
+// Run once on startup
+ensureUploadStore();
+
+function readJsonSafe(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return {};
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function writeJsonSafe(filePath, dataObj) {
+  try { fs.writeFileSync(filePath, JSON.stringify(dataObj, null, 2)); } catch {}
+}
+
+function saveUserFile(uid, filename) {
+  ensureUploadStore();
+  let db = readJsonSafe(FILES_DB);
   if (!db[uid]) db[uid] = [];
   if (!db[uid].includes(filename)) db[uid].push(filename);
-  fs.writeFileSync(FILES_DB, JSON.stringify(db, null, 2));
+  writeJsonSafe(FILES_DB, db);
+}
+
+function saveUserSummary(uid, filename, summary) {
+  ensureUploadStore();
+  const key = uid || 'public';
+  const db = readJsonSafe(SUMMARIES_DB);
+  if (!db[key]) db[key] = {};
+  db[key][filename] = {
+    summary,
+    savedAt: new Date().toISOString()
+  };
+  writeJsonSafe(SUMMARIES_DB, db);
+}
+
+function getUserSummaries(uid) {
+  const key = uid || 'public';
+  const db = readJsonSafe(SUMMARIES_DB);
+  return db[key] || {};
 }
 
 app.post('/upload', authenticateToken, upload.single('file'), (req, res) => {
@@ -99,19 +158,32 @@ app.get('/', (req, res) => {
   res.send('Express backend is running');
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start server with port fallback to avoid EADDRINUSE
+const DEFAULT_PORT = Number(process.env.PORT) || 5000;
+function startWithFallback(port, attemptsLeft = 10) {
+  const server = app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+  server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE' && attemptsLeft > 0) {
+      const nextPort = port + 1;
+      console.warn(`Port ${port} in use, trying ${nextPort}...`);
+      startWithFallback(nextPort, attemptsLeft - 1);
+    } else {
+      console.error('Failed to start server:', err);
+      process.exit(1);
+    }
+  });
+}
+startWithFallback(DEFAULT_PORT);
 
 
 // Summarization endpoint
-// Expects: { fileUrl: string } in body, user must be authenticated
+// Expects: { fileUrl: string, userMessage?: string } in body, user must be authenticated
 app.post('/summarize', authenticateToken, async (req, res) => {
-  const { fileUrl } = req.body;
+  const { fileUrl, userMessage } = req.body;
   if (!fileUrl) return res.status(400).json({ error: 'No fileUrl provided' });
 
-  // Only allow summarization of files in uploads directory
   const uploadsDir = path.join(__dirname, 'public', 'uploads');
   const filename = path.basename(fileUrl);
   const filePath = path.join(uploadsDir, filename);
@@ -120,7 +192,6 @@ app.post('/summarize', authenticateToken, async (req, res) => {
     return res.status(404).json({ error: 'File not found' });
   }
 
-  // Extract text based on file type
   let text = '';
   try {
     if (filename.toLowerCase().endsWith('.pdf')) {
@@ -137,26 +208,71 @@ app.post('/summarize', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'Failed to extract text', details: err.message });
   }
 
-  // Call Ollama's llama LLM (assume running locally on http://localhost:11434)
   try {
+    const systemPrompt = userMessage
+      ? `You are a helpful assistant that answers strictly based on the provided document content. If the user asks for a quiz, generate clear MCQs with options and answers. If the question cannot be answered using the document, say you don't have enough information.`
+      : `Provide a concise, structured summary of the document. Use bullet points for key points.`;
+
+    const userPrompt = userMessage
+      ? `User request: ${userMessage}\n\nDocument content follows:\n${text}`
+      : `Summarize the following document:\n${text}`;
+
     const ollamaRes = await axios.post('http://localhost:11434/api/chat', {
       model: 'llama3.1:8b',
       messages: [
-        { role: 'user', content: `Summarize the following document:\n${text}` }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
       ],
       stream: false
     });
-    // Try to extract summary from response (Ollama chat API returns { message: { content: ... } })
-    let summary = '';
+
+    let content = '';
     if (ollamaRes.data && ollamaRes.data.message && ollamaRes.data.message.content) {
-      summary = ollamaRes.data.message.content;
+      content = ollamaRes.data.message.content;
     } else if (ollamaRes.data.response) {
-      summary = ollamaRes.data.response;
+      content = ollamaRes.data.response;
     } else {
-      summary = JSON.stringify(ollamaRes.data);
+      content = JSON.stringify(ollamaRes.data);
     }
-    res.json({ summary });
+
+    if (!userMessage) {
+      // Save only initial summaries
+      saveUserSummary(req.user?.uid, filename, content);
+    }
+    res.json({ summary: content });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get summary from Ollama', details: err.message });
+    res.status(500).json({ error: 'Failed to get response from Ollama', details: err.message });
   }
+});
+
+// List summaries (auth)
+app.get('/summaries', authenticateToken, (req, res) => {
+  const summaries = getUserSummaries(req.user?.uid);
+  res.json({ summaries });
+});
+
+// Get single summary (auth)
+app.get('/summary', authenticateToken, (req, res) => {
+  const { fileName } = req.query;
+  if (!fileName) return res.status(400).json({ error: 'fileName is required' });
+  const summaries = getUserSummaries(req.user?.uid);
+  const s = summaries[fileName];
+  if (!s) return res.status(404).json({ error: 'Summary not found' });
+  res.json(s);
+});
+
+// Public fallback: list summaries saved under 'public'
+app.get('/summaries-public', (req, res) => {
+  const summaries = getUserSummaries('public');
+  res.json({ summaries });
+});
+
+// Public fallback: get one summary saved under 'public'
+app.get('/summary-public', (req, res) => {
+  const { fileName } = req.query;
+  if (!fileName) return res.status(400).json({ error: 'fileName is required' });
+  const summaries = getUserSummaries('public');
+  const s = summaries[fileName];
+  if (!s) return res.status(404).json({ error: 'Summary not found' });
+  res.json(s);
 });
