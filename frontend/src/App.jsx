@@ -3,6 +3,7 @@ import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Upload from './pages/Upload'
 import Quiz from './pages/Quiz'
+import QuestionBank from './pages/QuestionBank'
 import DocumentView from './pages/DocumentView'
 import SummaryChat from './pages/SummaryChat'
 import SavedSummaries from './pages/SavedSummaries'
@@ -83,6 +84,9 @@ export default function App() {
 								<NavLink to="/quiz" isActive={isActive('/quiz')} icon="❓">
 									Quiz
 								</NavLink>
+								<NavLink to="/question-bank" isActive={isActive('/question-bank')} icon="📚">
+									Question Bank
+								</NavLink>
 								<NavLink to="/summary" isActive={isActive('/summary')} icon="📝">
 									Summary
 								</NavLink>
@@ -139,6 +143,7 @@ export default function App() {
 					   <Route path="/" element={<Dashboard user={user} />} />
 					   <Route path="/upload" element={<Upload user={user} />} />
 					   <Route path="/quiz" element={<Quiz user={user} />} />
+					   <Route path="/question-bank" element={<QuestionBank user={user} />} />
 					   <Route path="/document/:filename" element={<DocumentView />} />
 					   <Route path="/summary" element={<SummaryChat user={user} />} />
 					   <Route path="/summaries" element={<SavedSummaries />} />

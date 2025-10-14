@@ -2,6 +2,7 @@ import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 from typing import Optional
+from fastapi import Depends
 
 # Global Firebase app instance
 _firebase_app: Optional[firebase_admin.App] = None
@@ -45,6 +46,36 @@ def get_db() -> firestore.Client:
 	if _db is None:
 		initialize_firebase()
 	return _db
+
+
+def get_file_by_id(file_id: str, user_id: str) -> Optional[dict]:
+	"""Get file information by file ID and user ID"""
+	try:
+		db = get_db()
+		doc_ref = db.collection("files").document(file_id)
+		doc = doc_ref.get()
+		
+		if doc.exists:
+			file_data = doc.to_dict()
+			# Verify the file belongs to the user
+			if file_data.get("user_id") == user_id:
+				file_data["file_id"] = file_id
+				return file_data
+		return None
+	except Exception as e:
+		print(f"Error getting file by ID: {e}")
+		return None
+
+
+def get_user_from_token():
+	"""Extract user information from Firebase token"""
+	# This is a placeholder - in a real implementation, you'd verify the Firebase token
+	# For now, we'll use a mock user for development
+	class MockUser:
+		def __init__(self):
+			self.uid = "demo_user_123"
+	
+	return MockUser()
 
 
 def close_firebase():
@@ -137,4 +168,5 @@ class MockQuery:
 		for doc_id, doc in self.collection.documents.items():
 			if doc.data.get(self.field) == self.value:
 				docs.append(MockDocumentSnapshot(doc_id, doc.data, self.collection.name))
+		print(f"Mock query returned {len(docs)} documents")
 		return docs

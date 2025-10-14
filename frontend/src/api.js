@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getAuth } from 'firebase/auth'
 
 const api = axios.create({
-	baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001',
+	baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
 })
 
 // Attach Firebase ID token if available
@@ -19,13 +19,15 @@ api.interceptors.request.use(async (config) => {
 	return config
 })
 
-export async function listFiles() {
+export async function listFiles(userId = null) {
 	try {
 		const { data } = await api.get('/files')
-		return data
+		// The Node.js server returns { files: [...] }, so extract the files array
+		return data.files || []
 	} catch (e) {
-		const { data } = await api.get('/files-public')
-		return data
+		console.error('Failed to fetch files:', e)
+		// Return empty array as fallback
+		return []
 	}
 }
 
@@ -52,8 +54,13 @@ export async function summarizeByUrl(fileUrl) {
 	return data
 }
 
-export async function generateQuiz(fileName, numQuestions) {
-	const { data } = await api.post('/quiz', { fileName, numQuestions })
+export async function generateQuiz(fileId, numQuestions) {
+	const { data } = await api.post('/quiz', { file_id: fileId, num_questions: numQuestions })
+	return data
+}
+
+export async function generateQuestionBank(fileId, numQuestions) {
+	const { data } = await api.post('/question-bank', { file_id: fileId, num_questions: numQuestions })
 	return data
 }
 

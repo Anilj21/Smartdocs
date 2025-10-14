@@ -276,3 +276,248 @@ app.get('/summary-public', (req, res) => {
   if (!s) return res.status(404).json({ error: 'Summary not found' });
   res.json(s);
 });
+
+// Quiz generation endpoint
+app.post('/quiz', authenticateToken, async (req, res) => {
+  try {
+    const { file_id, num_questions = 5 } = req.body;
+    if (!file_id) {
+      return res.status(400).json({ error: 'file_id is required' });
+    }
+
+    // file_id is the filename saved in uploads
+    const uploadsDir = path.join(__dirname, 'public', 'uploads');
+    const filename = path.basename(file_id);
+    const filePath = path.join(uploadsDir, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Extract text similar to summarize endpoint
+    let text = '';
+    try {
+      if (filename.toLowerCase().endsWith('.pdf')) {
+        const dataBuffer = fs.readFileSync(filePath);
+        const pdfData = await pdfParse(dataBuffer);
+        text = pdfData.text;
+      } else if (filename.toLowerCase().endsWith('.docx')) {
+        const result = await mammoth.extractRawText({ path: filePath });
+        text = result.value;
+      } else if (filename.toLowerCase().endsWith('.pptx')) {
+        // Basic PPTX support: try to read as text if available later; fallback
+        return res.status(400).json({ error: 'PPTX quiz not supported yet' });
+      } else {
+        return res.status(400).json({ error: 'Unsupported file type for quiz' });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to extract text', details: err.message });
+    }
+
+    // Prompt Ollama to generate quiz in strict JSON
+    const systemPrompt = `You are an expert educator. Create high-quality multiple choice questions strictly from the provided document content. Always return valid JSON only.`;
+    const userPrompt = `Create ${num_questions} MCQs from this content. Requirements:\n- Each question must have exactly 4 options (A, B, C, D)\n- Provide the correct answer as a single letter among A, B, C, D\n- Include a brief explanation\n\nReturn JSON of the form:\n{\n  "questions": [\n    {\n      "question": "...",\n      "options": ["Option A", "Option B", "Option C", "Option D"],\n      "answer": "A",\n      "explanation": "..."\n    }\n  ]\n}\n\nDocument content:\n${text.substring(0, 12000)}`; // limit to avoid overlong payload
+
+    let content = '';
+    try {
+      const ollamaRes = await axios.post('http://localhost:11434/api/chat', {
+        model: 'llama3.1:8b',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        stream: false
+      });
+      if (ollamaRes.data && ollamaRes.data.message && ollamaRes.data.message.content) {
+        content = ollamaRes.data.message.content;
+      } else if (ollamaRes.data.response) {
+        content = ollamaRes.data.response;
+      } else {
+        content = JSON.stringify(ollamaRes.data);
+      }
+    } catch (err) {
+      console.error('Ollama error:', err.message);
+      return res.status(500).json({ error: 'Failed to get response from Ollama', details: err.message });
+    }
+
+    // Try to parse JSON; clean code fences if present
+    function tryParseJSON(text) {
+      let t = (text || '').trim();
+      if (t.startsWith('```json')) t = t.slice(7);
+      if (t.endsWith('```')) t = t.slice(0, -3);
+      try { return JSON.parse(t); } catch { return null; }
+    }
+
+    const parsed = tryParseJSON(content);
+    let questions = [];
+    if (parsed && Array.isArray(parsed.questions)) {
+      for (const q of parsed.questions.slice(0, num_questions)) {
+        if (!q || !q.question || !Array.isArray(q.options) || !q.answer) continue;
+        // Normalize options to 4
+        const opts = q.options.slice(0, 4);
+        while (opts.length < 4) opts.push('');
+        // Normalize answer to A-D
+        const ans = String(q.answer).trim().toUpperCase();
+        const validAns = ['A','B','C','D'].includes(ans) ? ans : 'A';
+        questions.push({
+          question: String(q.question),
+          options: opts,
+          answer: validAns,
+          explanation: q.explanation ? String(q.explanation) : ''
+        });
+      }
+    }
+
+    // Fallback if parsing failed or empty
+    if (!questions.length) {
+      questions = [
+        {
+          question: 'Based on the provided material, what is a key concept discussed?',
+          options: ['Concept A', 'Concept B', 'Concept C', 'Concept D'],
+          answer: 'A',
+          explanation: 'Fallback question – ensure Ollama is running for AI-generated questions.'
+        }
+      ];
+    }
+
+    res.json({ file_id, num_questions: questions.length, questions });
+  } catch (error) {
+    console.error('Quiz generation error:', error);
+    res.status(500).json({ error: 'Failed to generate quiz' });
+  }
+});
+
+// Question bank generation endpoint
+app.post('/question-bank', authenticateToken, async (req, res) => {
+  try {
+    const { file_id, num_questions = 10 } = req.body;
+    if (!file_id) {
+      return res.status(400).json({ error: 'file_id is required' });
+    }
+
+    // file_id is the filename saved in uploads
+    const uploadsDir = path.join(__dirname, 'public', 'uploads');
+    const filename = path.basename(file_id);
+    const filePath = path.join(uploadsDir, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Extract text similar to quiz endpoint
+    let text = '';
+    try {
+      if (filename.toLowerCase().endsWith('.pdf')) {
+        const dataBuffer = fs.readFileSync(filePath);
+        const pdfData = await pdfParse(dataBuffer);
+        text = pdfData.text;
+      } else if (filename.toLowerCase().endsWith('.docx')) {
+        const result = await mammoth.extractRawText({ path: filePath });
+        text = result.value;
+      } else if (filename.toLowerCase().endsWith('.pptx')) {
+        return res.status(400).json({ error: 'PPTX question bank not supported yet' });
+      } else {
+        return res.status(400).json({ error: 'Unsupported file type for question bank' });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to extract text', details: err.message });
+    }
+
+    // Prompt Ollama to generate question bank in strict JSON
+    const systemPrompt = `You are an expert educator. Create comprehensive multiple choice questions from the provided document content. Focus on creating a diverse question bank covering different aspects of the content. Always return valid JSON only.`;
+    const userPrompt = `Create ${num_questions} MCQs from this content for a comprehensive question bank. Requirements:
+- Each question must have exactly 4 options (A, B, C, D)
+- Provide the correct answer as a single letter among A, B, C, D
+- Include a brief explanation
+- Cover different topics and difficulty levels from the document
+- Ensure questions test understanding, not just memorization
+
+Return JSON of the form:
+{
+  "questions": [
+    {
+      "question": "...",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "answer": "A",
+      "explanation": "..."
+    }
+  ]
+}
+
+Document content:
+${text.substring(0, 15000)}`; // limit to avoid overlong payload
+
+    let content = '';
+    try {
+      const ollamaRes = await axios.post('http://localhost:11434/api/chat', {
+        model: 'llama3.1:8b',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        stream: false
+      });
+      if (ollamaRes.data && ollamaRes.data.message && ollamaRes.data.message.content) {
+        content = ollamaRes.data.message.content;
+      } else if (ollamaRes.data.response) {
+        content = ollamaRes.data.response;
+      } else {
+        content = JSON.stringify(ollamaRes.data);
+      }
+    } catch (err) {
+      console.error('Ollama error:', err.message);
+      return res.status(500).json({ error: 'Failed to get response from Ollama', details: err.message });
+    }
+
+    // Try to parse JSON; clean code fences if present
+    function tryParseJSON(text) {
+      let t = (text || '').trim();
+      if (t.startsWith('```json')) t = t.slice(7);
+      if (t.endsWith('```')) t = t.slice(0, -3);
+      try { return JSON.parse(t); } catch { return null; }
+    }
+
+    const parsed = tryParseJSON(content);
+    let questions = [];
+    if (parsed && Array.isArray(parsed.questions)) {
+      for (const q of parsed.questions.slice(0, num_questions)) {
+        if (!q || !q.question || !Array.isArray(q.options) || !q.answer) continue;
+        // Normalize options to 4
+        const opts = q.options.slice(0, 4);
+        while (opts.length < 4) opts.push('');
+        // Normalize answer to A-D
+        const ans = String(q.answer).trim().toUpperCase();
+        const validAns = ['A','B','C','D'].includes(ans) ? ans : 'A';
+        questions.push({
+          question: String(q.question),
+          options: opts,
+          answer: validAns,
+          explanation: q.explanation ? String(q.explanation) : ''
+        });
+      }
+    }
+
+    // Fallback if parsing failed or empty
+    if (!questions.length) {
+      questions = [
+        {
+          question: 'Based on the provided material, what is a key concept discussed?',
+          options: ['Concept A', 'Concept B', 'Concept C', 'Concept D'],
+          answer: 'A',
+          explanation: 'Fallback question – ensure Ollama is running for AI-generated questions.'
+        },
+        {
+          question: 'Which of the following is mentioned in the document?',
+          options: ['Option A', 'Option B', 'Option C', 'Option D'],
+          answer: 'B',
+          explanation: 'Fallback question – ensure Ollama is running for AI-generated questions.'
+        }
+      ];
+    }
+
+    res.json({ file_id, num_questions: questions.length, questions });
+  } catch (error) {
+    console.error('Question bank generation error:', error);
+    res.status(500).json({ error: 'Failed to generate question bank' });
+  }
+});

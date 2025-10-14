@@ -132,3 +132,6 @@ If you encounter issues:
 3. Check Firebase Console for database errors
 4. Ensure all environment variables are set correctly
 
+
+
+

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { listFiles, generateQuiz } from '../api'
+import { listFiles, generateQuestionBank } from '../api'
 
-export default function Quiz({ user }) {
+export default function QuestionBank({ user }) {
 	const [files, setFiles] = useState([])
 	const [selected, setSelected] = useState('')
-	const [num, setNum] = useState(5)
-	const [quiz, setQuiz] = useState(null)
+	const [num, setNum] = useState(10)
+	const [questionBank, setQuestionBank] = useState(null)
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState('')
 
@@ -31,28 +31,27 @@ export default function Quiz({ user }) {
 		})
 	}, [user])
 
-	if (!user) return <p>Please login to generate quizzes.</p>
+	if (!user) return <p>Please login to generate question banks.</p>
 
 	const onGenerate = async () => {
 		if (!selected) return
 		setLoading(true)
 		setError('')
 		try {
-			console.log('Generating quiz for file:', selected, 'with', num, 'questions')
+			console.log('Generating question bank for file:', selected, 'with', num, 'questions')
 			console.log('Available files:', files)
-			// Use the filename as file_id for the quiz generation
-			const res = await generateQuiz(selected, num)
-			console.log('Quiz generated:', res)
+			const res = await generateQuestionBank(selected, num)
+			console.log('Question bank generated:', res)
 			if (res && res.questions) {
-				setQuiz(res)
-				console.log('Quiz set successfully with', res.questions.length, 'questions')
+				setQuestionBank(res)
+				console.log('Question bank set successfully with', res.questions.length, 'questions')
 			} else {
-				console.error('Invalid quiz response:', res)
-				setError('Invalid quiz response from server')
+				console.error('Invalid question bank response:', res)
+				setError('Invalid question bank response from server')
 			}
 		} catch (err) {
-			console.error('Quiz generation failed:', err)
-			setError(`Failed to generate quiz: ${err.message || 'Unknown error'}`)
+			console.error('Question bank generation failed:', err)
+			setError(`Failed to generate question bank: ${err.message || 'Unknown error'}`)
 		} finally {
 			setLoading(false)
 		}
@@ -60,7 +59,7 @@ export default function Quiz({ user }) {
 
 	return (
 		<div className="max-w-4xl mx-auto p-6">
-			<h1 className="text-3xl font-bold mb-6 text-gray-800">Quiz Generator</h1>
+			<h1 className="text-3xl font-bold mb-6 text-gray-800">Question Bank Generator</h1>
 			
 			{/* File Selection and Configuration */}
 			<div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -85,10 +84,10 @@ export default function Quiz({ user }) {
 						<label className="block text-sm font-medium text-gray-700 mb-2">Number of Questions</label>
 						<input 
 							type="number" 
-							min={1} 
-							max={20} 
+							min={5} 
+							max={50} 
 							value={num} 
-							onChange={(e) => setNum(parseInt(e.target.value || '1'))} 
+							onChange={(e) => setNum(parseInt(e.target.value || '5'))} 
 							className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 						/>
 					</div>
@@ -97,9 +96,9 @@ export default function Quiz({ user }) {
 						<button 
 							onClick={onGenerate} 
 							disabled={!selected || loading}
-							className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+							className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
 						>
-							{loading ? 'Generating...' : 'Generate Quiz'}
+							{loading ? 'Generating...' : 'Generate Question Bank'}
 						</button>
 					</div>
 				</div>
@@ -111,20 +110,20 @@ export default function Quiz({ user }) {
 				)}
 			</div>
 
-			{/* Quiz Results */}
-			{quiz && (
+			{/* Question Bank Results */}
+			{questionBank && (
 				<div className="space-y-6">
-					<div className="bg-green-50 border border-green-200 rounded-lg p-4">
-						<h2 className="text-lg font-semibold text-green-800 mb-2">
-							Quiz Generated Successfully!
+					<div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+						<h2 className="text-lg font-semibold text-purple-800 mb-2">
+							Question Bank Generated Successfully!
 						</h2>
-						<p className="text-green-700">
-							Generated {quiz.questions?.length || 0} questions from your document.
+						<p className="text-purple-700">
+							Generated {questionBank.questions?.length || 0} questions from your document.
 						</p>
 					</div>
 					
 					<div className="space-y-4">
-						{quiz.questions?.map((q, idx) => (
+						{questionBank.questions?.map((q, idx) => (
 							<div key={idx} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
 								<div className="flex items-start justify-between mb-4">
 									<h3 className="text-lg font-medium text-gray-800 flex-1">
@@ -143,12 +142,12 @@ export default function Quiz({ user }) {
 									))}
 								</div>
 								
-								<div className="bg-green-50 border border-green-200 rounded-md p-3">
-									<div className="text-sm font-medium text-green-800 mb-1">
+								<div className="bg-purple-50 border border-purple-200 rounded-md p-3">
+									<div className="text-sm font-medium text-purple-800 mb-1">
 										Correct Answer: {q.answer}
 									</div>
 									{q.explanation && (
-										<div className="text-sm text-green-700">
+										<div className="text-sm text-purple-700">
 											<strong>Explanation:</strong> {q.explanation}
 										</div>
 									)}
@@ -161,7 +160,3 @@ export default function Quiz({ user }) {
 		</div>
 	)
 }
-
-
-
-

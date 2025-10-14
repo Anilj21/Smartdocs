@@ -1,4 +1,27 @@
-from fastapi import Body
+import os
+import shutil
+from datetime import datetime, timezone
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Body
+from fastapi import Query
+from fastapi.responses import JSONResponse
+import uuid
+from firebase_admin import firestore
+
+from db import get_db
+from models import FileMeta
+
+router = APIRouter()
+
+ALLOWED_EXTS = {"pdf", "docx", "pptx"}
+MAX_MB = 25
+
+
+def get_upload_dir() -> str:
+	upload_dir = os.getenv("UPLOAD_DIR", "uploads")
+	if not os.path.exists(upload_dir):
+		os.makedirs(upload_dir, exist_ok=True)
+	return upload_dir
+
 
 # Delete file endpoint
 @router.delete("/delete-file")
@@ -27,31 +50,6 @@ async def delete_file(
 	except Exception as e:
 		print(f"Delete file error: {str(e)}")
 		raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
-import os
-import shutil
-from datetime import datetime, timezone
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
-from fastapi import Query
-from fastapi.responses import JSONResponse
-import uuid
-from firebase_admin import firestore
-
-from db import get_db
-from models import FileMeta
-
-
-router = APIRouter()
-
-
-ALLOWED_EXTS = {"pdf", "docx", "pptx"}
-MAX_MB = 25
-
-
-def get_upload_dir() -> str:
-	upload_dir = os.getenv("UPLOAD_DIR", "uploads")
-	if not os.path.exists(upload_dir):
-		os.makedirs(upload_dir, exist_ok=True)
-	return upload_dir
 
 
 @router.post("/upload")
@@ -130,6 +128,8 @@ async def list_files(user_id: str = Query(...)):
 		db = get_db()
 		items = []
 		
+		print(f"Listing files for user: {user_id}")
+		
 		# Query Firestore for user's files
 		docs = db.collection("files").where("user_id", "==", user_id).order_by("upload_date", direction=firestore.Query.DESCENDING).stream()
 		
@@ -137,9 +137,12 @@ async def list_files(user_id: str = Query(...)):
 			doc_data = doc.to_dict()
 			doc_data["file_id"] = doc.id
 			items.append(doc_data)
+			print(f"Found file: {doc_data.get('filename', 'Unknown')}")
 		
+		print(f"Total files found: {len(items)}")
 		return items
 		
 	except Exception as e:
 		print(f"List files error: {str(e)}")
-		raise HTTPException(status_code=500, detail=f"Failed to list files: {str(e)}")
+		# Return empty array instead of raising exception for better UX
+		return []
