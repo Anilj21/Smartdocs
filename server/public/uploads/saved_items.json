@@ -6,41 +6,63 @@
         "kind": "quiz",
         "filename": "Rabbit_and_Tortoise_Summary.docx",
         "title": "Rabbit_and_Tortoise_Summary.docx (quiz)",
-        "savedAt": "2025-10-14T19:32:44.468Z",
+        "savedAt": "2025-10-15T05:52:51.758Z",
         "data": {
           "questions": [
             {
-              "question": "What is the moral of the story about the Rabbit and the Tortoise?",
+              "question": "What was the outcome of the race between the Rabbit and the Tortoise?",
               "options": [
-                "Perseverance and arrogance win the race",
+                "The rabbit won",
+                "The tortoise won",
+                "It was a tie",
+                "The race was cancelled"
+              ],
+              "answer": "B",
+              "explanation": "According to the story, the tortoise crossed the finish line first, winning the race."
+            },
+            {
+              "question": "What was the reason for the rabbit's loss in the race?",
+              "options": [
+                "He was too slow",
+                "He took a nap midway",
+                "He underestimated the tortoise",
+                "He didn't train enough"
+              ],
+              "answer": "B",
+              "explanation": "The story states that the rabbit lost because he took a nap midway, allowing the tortoise to continue steadily and win the race."
+            },
+            {
+              "question": "What is the moral of the story?",
+              "options": [
+                "Fast and furious wins the day",
                 "Slow and steady loses the race",
-                "Hard work and determination are key to success",
+                "Perseverance and humility are not important",
                 "Slow and steady wins the race"
               ],
               "answer": "D",
-              "explanation": "The moral of the story emphasizes the importance of perseverance and steady effort."
+              "explanation": "The story concludes with the moral 'Slow and steady wins the race', emphasizing the importance of perseverance and humility."
             },
             {
-              "question": "What happens to the Rabbit during the race?",
+              "question": "What was the attitude of the rabbit towards the tortoise before the race?",
               "options": [
-                "He continues running steadily without stopping",
-                "He takes a nap midway through the race",
-                "He gets distracted by other animals",
-                "He loses his confidence"
+                "He was humble and respectful",
+                "He was confident but polite",
+                "He was overconfident and arrogant",
+                "He didn't care about the outcome"
               ],
-              "answer": "B",
-              "explanation": "The story states that the Rabbit is confident of his victory, but he takes a nap midway through the race."
+              "answer": "C",
+              "explanation": "The story describes the rabbit as 'fast but overconfident', indicating that he underestimated the tortoise and was too confident of his own victory."
             },
             {
-              "question": "What does the story teach about the characters?",
+              "question": "Placeholder question 5",
               "options": [
-                "It teaches them to be arrogant and overconfident",
-                "It teaches them the value of humility and perseverance",
-                "It teaches them that speed is more important than endurance",
-                "It teaches them to give up easily"
+                "A",
+                "B",
+                "C",
+                "D"
               ],
-              "answer": "B",
-              "explanation": "The story emphasizes the importance of perseverance, humility, and steady effort, teaching valuable lessons about these character traits."
+              "answer": "A",
+              "explanation": ""
             }
           ]
         }
@@ -205,6 +227,60 @@
         "savedAt": "2025-10-14T20:48:55.388Z",
         "data": {
           "summary": "It appears you provided a large amount of text about statistical tests, including parametric and non-parametric tests. I'll provide a summary and answer any specific questions you may have.\n\n**Summary:**\n\nThe text covers various types of statistical tests, including:\n\n1. **Parametric Tests**: These tests assume that the data follows a specific distribution (e.g., normal distribution) and require interval or ratio scales.\n2. **Non-Parametric Tests**: These tests do not assume any specific distribution and can be used with ordinal or nominal data.\n\n**Types of Data:**\n\nThe text also covers different types of data, including:\n\n1. **Nominal Data**: Non-numerical values (e.g., blood grouping).\n2. **Ordinal Data**: Values that have a natural order or ranking.\n3. **Discrete Data**: Whole numbers or counts (e.g., number of suitcases lost).\n4. **Continuous Data**: Infinite possible values, often associated with physical measurements.\n\n**Parametric Test Procedures:**\n\nThe text outlines the procedures for parametric tests, which involve:\n\n1. Using population parameters (e.g., mean and standard deviation).\n2. Requiring interval or ratio scales.\n3. Assumptions about the underlying distribution (e.g., normal distribution).\n\n**Non-Parametric Test Procedures:**\n\nNon-parametric tests do not require specific conditions about the shape of populations or population parameters.\n\n**Wilcoxon Rank Sum Test (Mann-Whitney Utest):**\n\nThis is a non-parametric test used to assess whether two samples come from the same distribution. It requires independent observations and ordinal or continuous measurements.\n\n**Specific Questions:**\n\nIf you have any specific questions about statistical tests or data types, please let me know, and I'll do my best to answer them."
+        }
+      },
+      "summary:Rabbit_and_Tortoise_Story.docx": {
+        "id": "summary:Rabbit_and_Tortoise_Story.docx",
+        "kind": "summary",
+        "filename": "Rabbit_and_Tortoise_Story.docx",
+        "title": "Rabbit_and_Tortoise_Story.docx (summary)",
+        "savedAt": "2025-10-15T06:02:06.375Z",
+        "data": {
+          "summary": "Here's a concise summary of the document in bullet points:\n\n**Key Points:**\n\n* A rabbit and a tortoise agree to a racing competition.\n* The rabbit, confident of his speed, takes a nap midway through the race.\n* The tortoise continues steadily without stopping, eventually crossing the finish line first.\n* The moral of the story is that \"Slow and steady wins the race\".\n* The story teaches the values of perseverance and humility."
+        }
+      },
+      "quiz:MAD NGO.pdf": {
+        "id": "quiz:MAD NGO.pdf",
+        "kind": "quiz",
+        "filename": "MAD NGO.pdf",
+        "title": "MAD NGO.pdf (quiz)",
+        "savedAt": "2025-10-15T06:06:17.170Z",
+        "data": {
+          "questions": [
+            {
+              "question": "Who are the students who submitted the project report?",
+              "options": [
+                "Hemant Singh Parmar and Anil Jangid",
+                "Aditya Danve and Hemant Singh Parmar",
+                "Anil Jangid and Aditya Danve",
+                "None of the above"
+              ],
+              "answer": "A",
+              "explanation": "According to the document, Hemant Singh Parmar and Anil Jangid are listed as the students who submitted the project report."
+            },
+            {
+              "question": "What is the name of the university that Mahatma Gandhi Mission University is affiliated with?",
+              "options": [
+                "Chhatrapati Sambhaji Nagar",
+                "Mahatma Gandhi Mission University",
+                "Jawaharlal Nehru Engineering College",
+                "None of the above"
+              ],
+              "answer": "B",
+              "explanation": "The document states that Mahatma Gandhi Mission University is located in Chhatrapati Sambhaji Nagar, but it does not explicitly state that it is affiliated with this university. However, based on the context, it can be inferred that Mahatma Gandhi Mission University is likely a separate entity."
+            },
+            {
+              "question": "What is the name of the subject in-charge/Guide for the project?",
+              "options": [
+                "Mrs. Sukhwant Kour",
+                "Mrs. Swati Magare",
+                "Both Mrs. Sukhwant Kour and Mrs. Swati Magare",
+                "None of the above"
+              ],
+              "answer": "C",
+              "explanation": "According to the document, both Mrs. Sukhwant Kour and Mrs. Swati Magare are listed as the subject in-charge/Guide for the project."
+            }
+          ]
         }
       }
     }
